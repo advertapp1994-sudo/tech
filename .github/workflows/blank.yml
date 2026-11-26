@@ -7,28 +7,34 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    runs-on: ubuntu-24.04
 
-      - uses: actions/setup-java@v4
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Prepare Android SDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - run: gradle assembleDebug
+      - name: Build APK
+        run: gradle assembleDebug --stacktrace
 
-      - run: cp app/build/outputs/apk/debug/app-debug.apk NuR_HOME_3D.apk
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk NuR_HOME_3D.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: NuR_HOME_3D
           path: NuR_HOME_3D.apk
+          if-no-files-found: error
